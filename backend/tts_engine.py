@@ -34,6 +34,11 @@ _apply_transformers_compat()
 _MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
 _LANGUAGE   = "es"
 
+# Tamaño total aproximado de los ficheros del modelo XTTS v2 en disco
+# (model.pth ~1,86 GB + config/vocab/speakers ~10 MB). Se usa para el medidor
+# de MB descargados durante la primera descarga.
+_XTTS_TOTAL_BYTES = 1_870_000_000
+
 
 def _tts_cache_dir() -> Path:
     """Directorio de caché de modelos de Coqui, respetando TTS_HOME / XDG_DATA_HOME.
@@ -51,6 +56,27 @@ def _tts_cache_dir() -> Path:
     if local and Path(local).exists():
         return Path(local) / "tts"
     return Path(os.path.expanduser("~")) / ".local" / "share" / "tts"
+
+
+def _model_cache_path() -> Path:
+    """Ruta en disco donde Coqui guarda el modelo XTTS v2."""
+    model_dir_name = _MODEL_NAME.replace("/", "--").replace("\\", "--")
+    return _tts_cache_dir() / model_dir_name
+
+
+def _dir_size_bytes(path: Path) -> int:
+    """Suma el tamaño de todos los ficheros bajo `path` (0 si no existe)."""
+    total = 0
+    try:
+        for root, _dirs, files in os.walk(path):
+            for f in files:
+                try:
+                    total += os.path.getsize(os.path.join(root, f))
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return total
 
 _tts = None
 _tts_lock   = threading.Lock()
@@ -79,6 +105,18 @@ def get_setup_status() -> dict:
     return {**_setup_progress, "ready": _ready, "loading": _loading}
 
 
+def _set_download_progress(pct: float, mb_done: float, mb_total: float):
+    """Actualiza el estado con el medidor de MB descargados / pendientes."""
+    global _setup_progress
+    _setup_progress = {
+        "progress": round(pct, 1),
+        "message": f"Descargando modelo XTTS v2… {mb_done:.0f} / {mb_total:.0f} MB",
+        "ready": False,
+        "downloaded_mb": round(mb_done, 1),
+        "total_mb": round(mb_total, 1),
+    }
+
+
 def get_device_info() -> dict:
     dev = _get_device()
     info = {"device": dev}
@@ -95,20 +133,44 @@ def install_model(progress_cb=None):
     """Download and cache the XTTS v2 model. Runs synchronously — call in a thread."""
     global _tts, _ready, _setup_progress
 
-    def update(pct, msg):
-        _setup_progress = {"progress": pct, "message": msg, "ready": False}
+    def update(pct, msg, **extra):
+        _setup_progress = {"progress": pct, "message": msg, "ready": False, **extra}
         if progress_cb:
             progress_cb(pct, msg)
+
+    # Hilo que vigila el tamaño del modelo en disco para alimentar el medidor de MB.
+    model_path = _model_cache_path()
+    _stop_monitor = threading.Event()
+
+    def _monitor():
+        while not _stop_monitor.is_set():
+            done = _dir_size_bytes(model_path)
+            frac = min(0.99, done / _XTTS_TOTAL_BYTES) if _XTTS_TOTAL_BYTES else 0
+            # Mapear bytes a 10–95 % (10 % reservado para imports, 95–100 % para cargar)
+            pct = 10 + frac * 85
+            mb_done  = done / (1024 * 1024)
+            mb_total = _XTTS_TOTAL_BYTES / (1024 * 1024)
+            _set_download_progress(pct, mb_done, mb_total)
+            _stop_monitor.wait(0.7)
 
     try:
         update(5, "Importando dependencias…")
         from TTS.api import TTS
 
-        update(10, "Descargando modelo XTTS v2 (~1,8 GB)… (esto puede tardar varios minutos)")
+        update(10, "Descargando modelo XTTS v2 (~1,8 GB)…")
+
+        mon = threading.Thread(target=_monitor, daemon=True)
+        mon.start()
 
         # TTS() will download the model automatically on first use
         device = _get_device()
-        tts_instance = TTS(_MODEL_NAME)
+        try:
+            tts_instance = TTS(_MODEL_NAME)
+        finally:
+            _stop_monitor.set()
+            mon.join(timeout=2)
+
+        update(96, "Cargando el modelo en memoria…")
         tts_instance = tts_instance.to(device)
 
         with _tts_lock:
@@ -120,6 +182,7 @@ def install_model(progress_cb=None):
             progress_cb(100, "Motor listo")
 
     except Exception as e:
+        _stop_monitor.set()
         _setup_progress = {"progress": 0, "message": f"Error: {e}", "ready": False}
         raise
 
@@ -140,9 +203,7 @@ def load_model_if_ready():
         # Verificar si el modelo está en caché. Respeta TTS_HOME / XDG_DATA_HOME
         # (la app fija TTS_HOME a %LOCALAPPDATA%\NarraVoz\models en producción)
         # antes de caer al directorio por defecto de Coqui.
-        cache_dir = _tts_cache_dir()
-        model_dir_name = _MODEL_NAME.replace("/", "--").replace("\\", "--")
-        model_path = cache_dir / model_dir_name
+        model_path = _model_cache_path()
 
         if not model_path.exists():
             # Modelo no descargado — no hacer nada, dejar que install_model() lo haga

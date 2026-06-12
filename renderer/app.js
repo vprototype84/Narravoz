@@ -111,7 +111,7 @@ function startFunMessages() {
     el.textContent = _funLoadingMsgs[i];
   };
   tick();
-  _funMsgTimer = setInterval(tick, 2500);
+  _funMsgTimer = setInterval(tick, 5000);
 }
 function stopFunMessages() {
   if (_funMsgTimer) { clearInterval(_funMsgTimer); _funMsgTimer = null; }
@@ -130,13 +130,17 @@ async function boot() {
   let _backendReachedByRenderer = false;
   window.electronAPI.onBackendError(msg => {
     if (!_backendReachedByRenderer) {
+      _backendStartError = msg;   // permite a _pollBackendHealth fallar rápido
       stopFunMessages();
       splashMsg.textContent = `Error al iniciar el backend: ${msg}`;
     } else {
       console.warn('backend-error IPC (ignorado, renderer ya conectado):', msg);
     }
   });
-  window.electronAPI.onBackendCrashed(() => {
+  window.electronAPI.onBackendCrashed((code) => {
+    if (!_backendReachedByRenderer) {
+      _backendStartError = `el proceso se cerró (código ${code})`;
+    }
     stopFunMessages();
     splashMsg.textContent = 'El backend se cerró inesperadamente. Reinicia la app.';
   });
@@ -163,6 +167,10 @@ async function boot() {
     }
     startFunMessages();
   }
+
+  // Tras provisionar, el primer arranque del backend importa torch+TTS en frío
+  // (compila los .pyc de todo el árbol de dependencias) y puede tardar minutos.
+  if (consentedBigDownload) splashMsg.textContent = 'Iniciando el motor de voz por primera vez…';
 
   // Polling directo al health endpoint — evita la carrera con el evento IPC
   try {
@@ -220,19 +228,31 @@ async function boot() {
   }
 }
 
-// Espera a que el backend responda en /health (timeout amplio: el primer arranque
-// tras provisionar puede tardar un poco más).
-function _pollBackendHealth(timeoutMs = 60000) {
+// Error de arranque del backend reportado por main.js (vía IPC). Permite que el
+// polling falle de inmediato en lugar de esperar todo el timeout.
+let _backendStartError = null;
+
+// Espera a que el backend responda en /health. El primer arranque tras provisionar
+// importa torch+TTS en frío y compila los .pyc de todo el árbol de dependencias,
+// lo que puede tardar varios minutos — por eso el timeout es amplio (coincide con
+// el BACKEND_READY_TIMEOUT de main.js).
+function _pollBackendHealth(timeoutMs = 300000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const poll = setInterval(async () => {
+      // Si el proceso backend falló de verdad, no tiene sentido seguir esperando.
+      if (_backendStartError) {
+        clearInterval(poll);
+        reject(new Error('No se pudo iniciar el motor de voz: ' + _backendStartError));
+        return;
+      }
       try {
         const res = await fetch('http://127.0.0.1:8765/health');
         if (res.ok) { clearInterval(poll); resolve(); }
       } catch (_) {
         if (Date.now() - start > timeoutMs) {
           clearInterval(poll);
-          reject(new Error('El backend no respondió a tiempo.'));
+          reject(new Error('El backend no respondió a tiempo. Reinicia la app para reintentar.'));
         }
       }
     }, 500);
@@ -257,9 +277,11 @@ async function downloadModelWithProgress(splashMsg, base = 0) {
       if (!st) return;
       if (st.message) splashMsg.textContent = st.message;
       _setSplashProgress(base + (st.progress || 0) * (span / 100));
+      _setSplashBytes(st.downloaded_mb, st.total_mb);
       if (st.ready) {
         clearInterval(poll);
         _setSplashProgress(100);
+        _setSplashBytes(null, null);
         resolve(st);
       } else if (!st.loading && (st.progress || 0) === 0) {
         // Ni cargando ni progresando: probable error de descarga
@@ -331,6 +353,16 @@ function _setSplashProgress(pct) {
   const label = document.getElementById('splash-progress-pct');
   if (fill)  fill.style.width  = `${Math.round(pct)}%`;
   if (label) label.textContent = `${Math.round(pct)}%`;
+}
+
+// Muestra "X MB / Y MB · faltan Z MB" bajo la barra. Llamar con (null,null) limpia.
+function _setSplashBytes(doneMb, totalMb) {
+  const el = document.getElementById('splash-progress-bytes');
+  if (!el) return;
+  if (doneMb == null || totalMb == null || !totalMb) { el.textContent = ''; return; }
+  const remain = Math.max(0, totalMb - doneMb);
+  const fmt = (mb) => mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${Math.round(mb)} MB`;
+  el.textContent = `${fmt(doneMb)} / ${fmt(totalMb)}  ·  faltan ${fmt(remain)}`;
 }
 
 // Simulate smooth progress from `from` toward `cap` over `durationMs`
