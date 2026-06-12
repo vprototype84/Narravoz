@@ -26,8 +26,8 @@ Aplicación de escritorio para añadir narración con voz clonada a vídeos de c
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/<usuario>/narravoz
-cd narravoz
+git clone https://github.com/vprototype84/Narravoz
+cd Narravoz
 
 # 2. Instalar ffmpeg (necesario en PATH para modo dev)
 brew install ffmpeg          # macOS
@@ -44,8 +44,8 @@ npm run dev
 
 ```powershell
 # 1. Clonar el repositorio
-git clone https://github.com/<usuario>/narravoz
-cd narravoz
+git clone https://github.com/vprototype84/Narravoz
+cd Narravoz
 
 # 2. Ejecutar el script de setup
 # (descarga uv.exe, ffmpeg.exe y crea el entorno Python)
