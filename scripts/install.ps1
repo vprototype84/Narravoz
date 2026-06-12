@@ -32,21 +32,11 @@ Write-Host "✓ Versión $version ($sizeMB MB)"
 
 # ── Descargar instalador ──────────────────────────────────────────────────────
 $installer = "$env:TEMP\NarraVoz-Setup.exe"
-Write-Host "→ Descargando..." -NoNewline
-
-$wc = New-Object System.Net.WebClient
-$lastPct = -1
-$wc.DownloadProgressChanged += {
-    $pct = $_.ProgressPercentage
-    if ($pct -ne $lastPct -and $pct % 10 -eq 0) {
-        Write-Host " $pct%" -NoNewline
-        $script:lastPct = $pct
-    }
-}
-$task = $wc.DownloadFileTaskAsync($asset.browser_download_url, $installer)
-while (-not $task.IsCompleted) { Start-Sleep -Milliseconds 200 }
-if ($task.IsFaulted) { throw $task.Exception }
-Write-Host " ✓"
+Write-Host "→ Descargando $sizeMB MB..."
+$ProgressPreference = 'SilentlyContinue'
+Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installer -UseBasicParsing
+$ProgressPreference = 'Continue'
+Write-Host "✓ Descarga completada"
 
 # ── Instalar silenciosamente (/S = modo NSIS sin wizard) ──────────────────────
 Write-Host "→ Instalando..." -NoNewline
