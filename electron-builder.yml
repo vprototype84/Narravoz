@@ -44,9 +44,8 @@ win:
   artifactName: NarraVoz-Setup-${version}.exe
 
 nsis:
-  oneClick: false
+  oneClick: true
   perMachine: false
-  allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false   # la limpieza (con opción de conservar voces) la hace installer.nsh
   installerLanguages:
     - es_ES
