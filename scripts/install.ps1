@@ -40,9 +40,11 @@ Write-Host "✓ Descarga completada"
 
 # ── Ejecutar instalador ───────────────────────────────────────────────────────
 Write-Host "→ Ejecutando instalador..."
-Write-Host "   (Se abrirá el asistente de instalación de NarraVoz)"
+Write-Host "   (Busca la ventana del asistente de NarraVoz en la barra de tareas)"
 Write-Host ""
-Start-Process -FilePath $installer -Wait
+# -WindowStyle Normal fuerza la ventana al frente; sin -Wait para que el prompt no bloquee
+$proc = Start-Process -FilePath $installer -WindowStyle Normal -PassThru
+$proc.WaitForExit()
 Remove-Item $installer -Force -ErrorAction SilentlyContinue
 
 Write-Host ""
