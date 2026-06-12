@@ -1,0 +1,23 @@
+node_modules/
+dist/
+data/
+*.pyc
+__pycache__/
+.env
+*.log
+
+# Python virtual environment
+.venv/
+
+# Binarios de plataforma (descargados por scripts/setup.*)
+resources/bin/
+resources/mac/
+
+# ffmpeg estático (demasiado grande para git)
+resources/ffmpeg/
+
+# WAVs de voces de muestra (datos locales del desarrollador)
+assets/voices/*.wav
+
+# Artefactos de build
+build/*.blockmap

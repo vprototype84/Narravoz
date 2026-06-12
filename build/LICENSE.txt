@@ -1,0 +1,36 @@
+ACUERDO DE LICENCIA DE USUARIO FINAL — NarraVoz
+
+Copyright (c) 2026. Todos los derechos reservados.
+
+Al instalar y utilizar NarraVoz ("el Software") aceptas los siguientes términos:
+
+1. USO
+   Se te concede una licencia personal, no exclusiva e intransferible para
+   instalar y usar el Software en tus propios equipos.
+
+2. PROCESAMIENTO LOCAL
+   NarraVoz realiza la síntesis de voz y la edición de vídeo de forma local en
+   tu equipo. Durante la primera instalación, el Software descarga de internet
+   el motor de voz XTTS v2 y sus dependencias (aproximadamente 2,3 GB). No se
+   envían tus vídeos, textos ni grabaciones a ningún servidor externo.
+
+3. MOTOR DE VOZ (XTTS v2 — Coqui)
+   El modelo de voz XTTS v2 se distribuye bajo la licencia Coqui Public Model
+   License (CPML), de uso NO comercial. Al continuar, aceptas dichos términos.
+   Consulta: https://coqui.ai/cpml
+
+4. COMPONENTES DE TERCEROS
+   El Software incluye o descarga componentes de terceros (entre otros: FFmpeg,
+   PyTorch, Coqui TTS y diversas fuentes tipográficas con licencia OFL/libre),
+   cada uno sujeto a su propia licencia.
+
+5. CLONACIÓN DE VOZ — USO RESPONSABLE
+   Eres el único responsable del uso que hagas de la clonación de voz. Debes
+   contar con el consentimiento de las personas cuyas voces utilices. Queda
+   prohibido cualquier uso fraudulento, difamatorio o ilícito.
+
+6. SIN GARANTÍA
+   El Software se proporciona "TAL CUAL", sin garantías de ningún tipo. El autor
+   no será responsable de daños derivados de su uso.
+
+Si no estás de acuerdo con estos términos, cancela la instalación.

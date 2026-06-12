@@ -1,0 +1,16 @@
+# Normalizar finales de línea por plataforma
+* text=auto
+
+# Scripts Unix: siempre LF
+*.sh    text eol=lf
+*.py    text eol=lf
+
+# Fuentes: binarios, sin conversión
+*.ttf   binary
+*.otf   binary
+*.ico   binary
+*.png   binary
+*.wav   binary
+
+# NSIS: CRLF para compatibilidad con el compilador NSIS en Windows
+*.nsh   text eol=crlf

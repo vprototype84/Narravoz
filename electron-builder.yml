@@ -1,0 +1,73 @@
+appId: com.narravoz.app
+productName: NarraVoz
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - electron/**/*
+  - renderer/**/*
+  - assets/**/*
+  - "!assets/voices/*.wav"
+  - node_modules/**/*
+
+extraResources:
+  - from: assets/voices
+    to: voices
+    filter: "*.wav"
+  - from: assets/capture_text.txt
+    to: capture_text.txt
+  - from: backend
+    to: backend
+    filter:
+      - "**/*.py"
+      - "requirements.txt"
+  - from: scripts
+    to: scripts
+    filter: "**/*.py"
+  - from: assets/fonts
+    to: fonts
+    filter: "*.ttf"
+  - from: resources/bin
+    to: bin
+    filter: "*.exe"
+  - from: resources/ffmpeg
+    to: ffmpeg
+    filter: "*.exe"
+
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+  artifactName: NarraVoz-Setup-${version}.exe
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false   # la limpieza (con opción de conservar voces) la hace installer.nsh
+  installerLanguages:
+    - es_ES
+  license: build/LICENSE.txt
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  include: build/installer.nsh
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  category: public.app-category.video
+  darkModeSupport: true
+  artifactName: NarraVoz-${version}.dmg
+
+dmg:
+  background: build/dmg-background.png
+  window:
+    width: 540
+    height: 380

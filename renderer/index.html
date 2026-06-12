@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: file: http://localhost:8765; img-src 'self' blob: data:; connect-src http://localhost:8765" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NarraVoz</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ── Loading splash (shown while backend starts) ── -->
+<div id="splash" class="splash">
+  <div class="splash-inner">
+    <div class="logo-mark">NV</div>
+    <h1 class="splash-title">NarraVoz</h1>
+    <p class="splash-sub" id="splash-msg">Iniciando el motor de voz…</p>
+    <div class="splash-progress hidden" id="splash-progress">
+      <div class="splash-progress-track">
+        <div class="splash-progress-fill" id="splash-progress-fill"></div>
+      </div>
+      <span class="splash-progress-pct" id="splash-progress-pct">0%</span>
+    </div>
+    <div class="spinner" id="splash-spinner"></div>
+  </div>
+</div>
+
+<!-- ── Shell (shown after backend ready) ── -->
+<div id="shell" class="shell hidden">
+
+  <!-- Sidebar navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-mark sm">NV</span>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-view="editor" title="Editor">
+        <svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87V19a1 1 0 01-1.447.894L15 17.75M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+        <span>Editor</span>
+      </li>
+      <li class="nav-item" data-view="voices" title="Voces">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM7 10a5 5 0 0010 0M12 19v4M8 23h8"/></svg>
+        <span>Voces</span>
+      </li>
+      <li class="nav-item" data-view="settings" title="Opciones">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Opciones</span>
+      </li>
+    </ul>
+    <div class="sidebar-model-status" id="sidebar-model-status" title="Estado del motor de voz"></div>
+    <div class="sidebar-version" id="sidebar-version"></div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="content">
+    <div id="view-welcome" class="view hidden"></div>
+    <div id="view-editor"  class="view"></div>
+    <div id="view-voices"  class="view hidden"></div>
+    <div id="view-settings" class="view hidden"></div>
+  </main>
+
+</div>
+
+<!-- ── Setup overlay (first-run model install) ── -->
+<div id="setup-overlay" class="setup-overlay hidden">
+  <div class="setup-card">
+    <div class="logo-mark">NV</div>
+    <h2>Configuración inicial</h2>
+    <p>NarraVoz necesita descargar el motor de voz XTTS v2 (~1,8 GB).<br>
+       Esto ocurre una sola vez.</p>
+    <div class="setup-progress hidden" id="setup-progress">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="setup-progress-fill"></div>
+      </div>
+      <p class="progress-label" id="setup-progress-label">Preparando…</p>
+    </div>
+    <button class="btn btn-primary" id="setup-install-btn">Instalar ahora</button>
+    <p class="setup-note">Necesitas conexión a internet para la descarga.</p>
+  </div>
+</div>
+
+<!-- ── Toast container ── -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── Modal backdrop ── -->
+<div id="modal-backdrop" class="modal-backdrop hidden"></div>
+<div id="modal-container" class="modal-container hidden"></div>
+
+<script src="app.js"></script>
+<script src="welcome.js"></script>
+<script src="editor.js"></script>
+<script src="voices.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>
