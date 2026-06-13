@@ -30,6 +30,10 @@ function getPaths() {
   const venvPython = platform === 'win32'
     ? path.join(runtimeDir, 'venv', 'Scripts', 'python.exe')
     : path.join(runtimeDir, 'venv', 'bin', 'python3');
+  // Marcador escrito SOLO cuando la provisión termina entera. Un venv a medias
+  // (p. ej. stub de uv sin Python base) deja de existir venvPython pero no este
+  // marcador → forzamos re-provisión en vez de arrancar con un runtime roto.
+  const provisionedMarker = path.join(runtimeDir, '.provisioned');
   const modelsDir = path.join(localAppData, 'NarraVoz', 'models');
 
   // Python a usar para el backend:
@@ -68,6 +72,7 @@ function getPaths() {
     platform,
     pythonBin,
     venvPython,
+    provisionedMarker,
     uvBin,
     runtimeDir,
     modelsDir,
@@ -179,10 +184,17 @@ function waitForBackend(timeout) {
 // Idempotente: si el venv ya existe, no hace nada. Solo en producción.
 function provisionRuntime(paths, onProgress) {
   return new Promise((resolve, reject) => {
-    if (fs.existsSync(paths.venvPython)) { resolve(); return; }
+    // Solo el marcador garantiza una provisión COMPLETA. Si está, no hay nada que hacer.
+    if (fs.existsSync(paths.provisionedMarker)) { resolve(); return; }
 
     fs.mkdirSync(paths.runtimeDir, { recursive: true });
     const venvDir = path.join(paths.runtimeDir, 'venv');
+
+    // Sin marcador pero con venv a medias → limpiarlo para recrearlo desde cero.
+    if (fs.existsSync(venvDir)) {
+      try { fs.rmSync(venvDir, { recursive: true, force: true }); }
+      catch (e) { log.warn('No se pudo limpiar venv corrupto:', e.message); }
+    }
     const env = {
       ...process.env,
       UV_PYTHON_INSTALL_DIR: path.join(paths.runtimeDir, 'python'),
@@ -209,6 +221,9 @@ function provisionRuntime(paths, onProgress) {
     let i = 0;
     const next = () => {
       if (i >= steps.length) {
+        // Provisión completa → escribir el marcador para que no se repita.
+        try { fs.writeFileSync(paths.provisionedMarker, new Date().toISOString()); }
+        catch (e) { log.warn('No se pudo escribir el marcador de provisión:', e.message); }
         onProgress(100, 'Dependencias listas');
         resolve();
         return;
@@ -288,7 +303,7 @@ function registerIpcHandlers(paths) {
   // El renderer pregunta si hace falta descargar el runtime (Python + deps).
   ipcMain.handle('get-provision-state', () => ({
     isDev: paths.isDev,
-    needsRuntime: !paths.isDev && !fs.existsSync(paths.venvPython),
+    needsRuntime: !paths.isDev && !fs.existsSync(paths.provisionedMarker),
   }));
 
   // Tras el consentimiento del usuario, el renderer dispara la provisión.
@@ -442,10 +457,10 @@ app.whenReady().then(async () => {
   registerIpcHandlers(appPaths);
   createWindow();
 
-  // Si el runtime ya está (dev usa .venv; prod, venv ya provisionado) arrancamos
-  // el backend directamente. Si falta (primer arranque en prod), esperamos a que
-  // el renderer muestre el consentimiento y dispare la provisión vía IPC.
-  if (appPaths.isDev || fs.existsSync(appPaths.venvPython)) {
+  // Si el runtime ya está (dev usa .venv; prod, provisión COMPLETA marcada) arrancamos
+  // el backend directamente. Si falta o está a medias, esperamos a que el renderer
+  // muestre el consentimiento y dispare la (re)provisión vía IPC.
+  if (appPaths.isDev || fs.existsSync(appPaths.provisionedMarker)) {
     bootBackend(appPaths);
   }
 
