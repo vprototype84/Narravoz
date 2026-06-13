@@ -1,6 +1,6 @@
 {
   "name": "narravoz",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Narración con voz clonada para vídeos de captura de pantalla",
   "main": "electron/main.js",
   "author": "NarraVoz",

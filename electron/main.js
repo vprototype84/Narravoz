@@ -195,8 +195,11 @@ function provisionRuntime(paths, onProgress) {
     const steps = [
       { args: ['python', 'install', '3.11'], msg: 'Descargando Python…', pct: 8 },
       { args: ['venv', '--python', '3.11', venvDir], msg: 'Creando entorno…', pct: 18 },
+      // PyTorch fijado a <2.9: desde 2.9 torchaudio exige torchcodec (+ffmpeg libs)
+      // para audio IO, que no está disponible de forma fiable en Windows CPU y
+      // rompe coqui-TTS al importar. 2.8 funciona con XTTS sin dependencias extra.
       { args: ['pip', 'install', '--python', paths.venvPython,
-               'torch', 'torchaudio', '--index-url', CPU_INDEX],
+               'torch==2.8.0', 'torchaudio==2.8.0', '--index-url', CPU_INDEX],
         msg: 'Instalando PyTorch (CPU)…', pct: 30 },
       { args: ['pip', 'install', '--python', paths.venvPython,
                '-r', paths.requirements, '--extra-index-url', CPU_INDEX],

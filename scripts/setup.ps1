@@ -88,7 +88,7 @@ if (-not (Test-Path $venvPy)) {
 
 Write-Host "→ Instalando dependencias Python (PyTorch CPU, puede tardar)..."
 & .venv\Scripts\pip install --quiet --upgrade pip
-& .venv\Scripts\pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+& .venv\Scripts\pip install --quiet torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu
 & .venv\Scripts\pip install --quiet -r backend\requirements.txt
 
 # 6. Voces placeholder

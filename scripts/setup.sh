@@ -73,7 +73,7 @@ fi
 
 echo "→ Instalando dependencias Python (PyTorch CPU)..."
 .venv/bin/pip install --quiet --upgrade pip
-.venv/bin/pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+.venv/bin/pip install --quiet "torch==2.8.0" "torchaudio==2.8.0" --index-url https://download.pytorch.org/whl/cpu
 .venv/bin/pip install --quiet -r backend/requirements.txt
 
 # 6. Voces placeholder
